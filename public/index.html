@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Clon r/place</title>
+  <style>
+    body {
+      display: flex; flex-direction: column; align-items: center; margin-top: 20px;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      border: 1px solid black;
+      image-rendering: pixelated;
+      cursor: crosshair;
+      width: 500px;  /* escala visual */
+      height: 500px;
+    }
+    #colors {
+      margin: 10px;
+    }
+    .color-swatch {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 1px solid #000;
+      margin: 0 5px;
+      cursor: pointer;
+    }
+    .color-swatch.selected {
+      outline: 3px solid #333;
+      outline-offset: 1px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Clon r/place</h1>
+  <canvas id="canvas" width="1000" height="1000"></canvas>
+  <div id="colors">
+    <div class="color-swatch selected" style="background:#ff0000" data-color="#ff0000"></div>
+    <div class="color-swatch" style="background:#00ff00" data-color="#00ff00"></div>
+    <div class="color-swatch" style="background:#0000ff" data-color="#0000ff"></div>
+    <div class="color-swatch" style="background:#ffff00" data-color="#ffff00"></div>
+    <div class="color-swatch" style="background:#000000" data-color="#000000"></div>
+    <div class="color-swatch" style="background:#ffffff" data-color="#ffffff"></div>
+    <div class="color-swatch" style="background:#ff69b4" data-color="#ff69b4"></div> <!-- rosa -->
+    <div class="color-swatch" style="background:#ea6291" data-color="#ea6291"></div> <!-- rosa más oscuro -->
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const DISPLAY_SIZE = 500; 
+    const CANVAS_SIZE = 1000; 
+    const GRID_SIZE = 10;
+
+    let currentColor = '#ff0000';
+
+    const scaleX = CANVAS_SIZE / DISPLAY_SIZE;
+    const scaleY = CANVAS_SIZE / DISPLAY_SIZE;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+    function paintPixel(cellX, cellY, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(cellX * GRID_SIZE, cellY * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+    }
+
+    async function loadPixels() {
+      try {
+        const res = await fetch('http://localhost:3000/pixels');
+        const pixels = await res.json();
+        for (const coord in pixels) {
+          const color = pixels[coord];
+          const [x, y] = coord.split(':').map(Number);
+          paintPixel(x, y, color);
+        }
+      } catch (e) {
+        console.error('Error cargando pixeles:', e);
+      }
+    }
+
+    async function sendPixel(cellX, cellY, color) {
+      try {
+        await fetch('http://localhost:3000/pixel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ x: cellX * GRID_SIZE, y: cellY * GRID_SIZE, color }),
+        });
+      } catch (e) {
+        console.error('Error enviando pixel:', e);
+      }
+    }
+
+    canvas.addEventListener('click', async (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const canvasX = Math.floor((e.clientX - rect.left) * scaleX);
+      const canvasY = Math.floor((e.clientY - rect.top) * scaleY);
+
+      const cellX = Math.floor(canvasX / GRID_SIZE);
+      const cellY = Math.floor(canvasY / GRID_SIZE);
+
+      paintPixel(cellX, cellY, currentColor);
+      await sendPixel(cellX, cellY, currentColor);
+    });
+
+    document.querySelectorAll('.color-swatch').forEach(swatch => {
+      swatch.addEventListener('click', () => {
+        document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+        swatch.classList.add('selected');
+        currentColor = swatch.getAttribute('data-color');
+      });
+    });
+
+    loadPixels();
+  </script>
+</body>
+</html>
