@@ -1,118 +1,318 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <title>Clon r/place</title>
-  <style>
-    body {
-      display: flex; flex-direction: column; align-items: center; margin-top: 20px;
-      font-family: Arial, sans-serif;
-    }
-    canvas {
-      border: 1px solid black;
-      image-rendering: pixelated;
-      cursor: crosshair;
-      width: 500px;  /* escala visual */
-      height: 500px;
-    }
-    #colors {
-      margin: 10px;
-    }
-    .color-swatch {
-      display: inline-block;
-      width: 20px; height: 20px;
-      border: 1px solid #000;
-      margin: 0 5px;
-      cursor: pointer;
-    }
-    .color-swatch.selected {
-      outline: 3px solid #333;
-      outline-offset: 1px;
-    }
-  </style>
-</head>
-<body>
-  <h1>Clon r/place</h1>
-  <canvas id="canvas" width="1000" height="1000"></canvas>
-  <div id="colors">
-    <div class="color-swatch selected" style="background:#ff0000" data-color="#ff0000"></div>
-    <div class="color-swatch" style="background:#00ff00" data-color="#00ff00"></div>
-    <div class="color-swatch" style="background:#0000ff" data-color="#0000ff"></div>
-    <div class="color-swatch" style="background:#ffff00" data-color="#ffff00"></div>
-    <div class="color-swatch" style="background:#000000" data-color="#000000"></div>
-    <div class="color-swatch" style="background:#ffffff" data-color="#ffffff"></div>
-    <div class="color-swatch" style="background:#ff69b4" data-color="#ff69b4"></div> <!-- rosa -->
-    <div class="color-swatch" style="background:#ea6291" data-color="#ea6291"></div> <!-- rosa más oscuro -->
-  </div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Clon r/place</title>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 20px;
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+      }
+      
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      
+      canvas {
+        border: 2px solid #333;
+        image-rendering: pixelated;
+        cursor: crosshair;
+        width: 500px;
+        height: 500px;
+        display: block;
+        margin: 0 auto;
+      }
+      
+      canvas:hover {
+        border-color: #007bff;
+      }
+      
+      #status {
+        text-align: center;
+        margin: 10px 0;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-weight: bold;
+      }
+      
+      .status-connected {
+        background: #d4edda;
+        color: #155724;
+      }
+      
+      .status-disconnected {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      
+      .status-connecting {
+        background: #fff3cd;
+        color: #856404;
+      }
+      
+      #colors {
+        margin: 20px 0;
+        text-align: center;
+      }
+      
+      .color-swatch {
+        display: inline-block;
+        width: 30px;
+        height: 30px;
+        border: 2px solid #000;
+        margin: 0 5px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+      }
+      
+      .color-swatch:hover {
+        transform: scale(1.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+      
+      .color-swatch.selected {
+        outline: 3px solid #007bff;
+        outline-offset: 2px;
+        transform: scale(1.1);
+      }
+      
+      #coordinates {
+        text-align: center;
+        margin: 10px 0;
+        font-family: monospace;
+        color: #666;
+      }
+      
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎨 Clon r/place</h1>
+      
+      <div id="status" class="status-connecting">Conectando...</div>
+      
+      <canvas id="canvas" width="1000" height="1000"></canvas>
+      
+      <div id="coordinates">Posición: --, --</div>
+      
+      <div id="colors">
+        <div class="color-swatch selected" style="background: #ff0000" data-color="#ff0000" title="Rojo"></div>
+        <div class="color-swatch" style="background: #00ff00" data-color="#00ff00" title="Verde"></div>
+        <div class="color-swatch" style="background: #0000ff" data-color="#0000ff" title="Azul"></div>
+        <div class="color-swatch" style="background: #ffff00" data-color="#ffff00" title="Amarillo"></div>
+        <div class="color-swatch" style="background: #000000" data-color="#000000" title="Negro"></div>
+        <div class="color-swatch" style="background: #ffffff" data-color="#ffffff" title="Blanco"></div>
+        <div class="color-swatch" style="background: #ff69b4" data-color="#ff69b4" title="Rosa"></div>
+        <div class="color-swatch" style="background: #ea6291" data-color="#ea6291" title="Rosa oscuro"></div>
+        <div class="color-swatch" style="background: #8b4513" data-color="#8b4513" title="Marrón"></div>
+        <div class="color-swatch" style="background: #ffa500" data-color="#ffa500" title="Naranja"></div>
+        <div class="color-swatch" style="background: #800080" data-color="#800080" title="Púrpura"></div>
+        <div class="color-swatch" style="background: #40e0d0" data-color="#40e0d0" title="Turquesa"></div>
+      </div>
+    </div>
 
-  <script>
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const statusEl = document.getElementById("status");
+      const coordinatesEl = document.getElementById("coordinates");
 
-    const DISPLAY_SIZE = 500; 
-    const CANVAS_SIZE = 1000; 
-    const GRID_SIZE = 10;
+      const DISPLAY_SIZE = 500;
+      const CANVAS_SIZE = 1000;
+      const GRID_SIZE = 10;
 
-    let currentColor = '#ff0000';
+      let currentColor = "#ff0000";
+      let isConnected = false;
 
-    const scaleX = CANVAS_SIZE / DISPLAY_SIZE;
-    const scaleY = CANVAS_SIZE / DISPLAY_SIZE;
+      const scaleX = CANVAS_SIZE / DISPLAY_SIZE;
+      const scaleY = CANVAS_SIZE / DISPLAY_SIZE;
 
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      // Inicializar canvas con fondo blanco
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-    function paintPixel(cellX, cellY, color) {
-      ctx.fillStyle = color;
-      ctx.fillRect(cellX * GRID_SIZE, cellY * GRID_SIZE, GRID_SIZE, GRID_SIZE);
-    }
+      function updateStatus(status, message) {
+        statusEl.className = `status-${status}`;
+        statusEl.textContent = message;
+      }
 
-    async function loadPixels() {
-      try {
-        const res = await fetch('http://localhost:3000/pixels');
-        const pixels = await res.json();
-        for (const coord in pixels) {
-          const color = pixels[coord];
-          const [x, y] = coord.split(':').map(Number);
-          paintPixel(x, y, color);
+      function paintPixel(cellX, cellY, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(
+          cellX * GRID_SIZE,
+          cellY * GRID_SIZE,
+          GRID_SIZE,
+          GRID_SIZE
+        );
+      }
+
+      async function loadPixels() {
+        try {
+          updateStatus('connecting', 'Cargando píxeles...');
+          const res = await fetch("http://localhost:3000/pixels");
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          
+          const pixels = await res.json();
+          let count = 0;
+          
+          for (const coord in pixels) {
+            const color = pixels[coord];
+            const [x, y] = coord.split(":").map(Number);
+            if (!isNaN(x) && !isNaN(y)) {
+              paintPixel(x, y, color);
+              count++;
+            }
+          }
+          
+          console.log(`${count} píxeles cargados correctamente.`);
+          if (isConnected) {
+            updateStatus('connected', `Conectado - ${count} píxeles cargados`);
+          }
+        } catch (e) {
+          console.error("Error cargando píxeles:", e);
+          updateStatus('disconnected', 'Error cargando píxeles');
         }
-      } catch (e) {
-        console.error('Error cargando pixeles:', e);
       }
-    }
 
-    async function sendPixel(cellX, cellY, color) {
-      try {
-        await fetch('http://localhost:3000/pixel', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ x: cellX * GRID_SIZE, y: cellY * GRID_SIZE, color }),
-        });
-      } catch (e) {
-        console.error('Error enviando pixel:', e);
+      // Conexión WebSocket
+      let ws;
+      let reconnectAttempts = 0;
+      const maxReconnectAttempts = 5;
+
+      function connectWebSocket() {
+        ws = new WebSocket("ws://localhost:3000");
+
+        ws.onopen = () => {
+          console.log("Conexión WebSocket establecida");
+          isConnected = true;
+          reconnectAttempts = 0;
+          updateStatus('connected', 'Conectado en tiempo real');
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log("Mensaje WS recibido:", data);
+            
+            if (data.type === 'init' && data.pixels) {
+              // Mensaje de inicialización con todos los píxeles
+              for (const coord in data.pixels) {
+                const color = data.pixels[coord];
+                const [x, y] = coord.split(":").map(Number);
+                if (!isNaN(x) && !isNaN(y)) {
+                  paintPixel(x, y, color);
+                }
+              }
+            } else if (data.coord && data.color) {
+              // Actualización individual de píxel
+              const [x, y] = data.coord.split(":").map(Number);
+              if (!isNaN(x) && !isNaN(y)) {
+                paintPixel(x, y, data.color);
+              }
+            }
+          } catch (e) {
+            console.error("Error al procesar mensaje WebSocket:", e);
+          }
+        };
+
+        ws.onclose = () => {
+          console.log("Conexión WebSocket cerrada");
+          isConnected = false;
+          updateStatus('disconnected', 'Desconectado');
+          
+          // Intentar reconectar
+          if (reconnectAttempts < maxReconnectAttempts) {
+            reconnectAttempts++;
+            updateStatus('connecting', `Reconectando... (${reconnectAttempts}/${maxReconnectAttempts})`);
+            setTimeout(connectWebSocket, 2000);
+          } else {
+            updateStatus('disconnected', 'No se pudo reconectar');
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error("Error WebSocket:", error);
+          updateStatus('disconnected', 'Error de conexión');
+        };
       }
-    }
 
-    canvas.addEventListener('click', async (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const canvasX = Math.floor((e.clientX - rect.left) * scaleX);
-      const canvasY = Math.floor((e.clientY - rect.top) * scaleY);
+      async function sendPixel(cellX, cellY, color) {
+        try {
+          const response = await fetch("http://localhost:3000/pixel", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              x: cellX * GRID_SIZE,
+              y: cellY * GRID_SIZE,
+              color,
+            }),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+        } catch (e) {
+          console.error("Error enviando pixel:", e);
+          alert("Error al colocar el píxel. Inténtalo de nuevo.");
+        }
+      }
 
-      const cellX = Math.floor(canvasX / GRID_SIZE);
-      const cellY = Math.floor(canvasY / GRID_SIZE);
+      // Event listeners
+      canvas.addEventListener("click", async (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const canvasX = Math.floor((e.clientX - rect.left) * scaleX);
+        const canvasY = Math.floor((e.clientY - rect.top) * scaleY);
 
-      paintPixel(cellX, cellY, currentColor);
-      await sendPixel(cellX, cellY, currentColor);
-    });
+        const cellX = Math.floor(canvasX / GRID_SIZE);
+        const cellY = Math.floor(canvasY / GRID_SIZE);
 
-    document.querySelectorAll('.color-swatch').forEach(swatch => {
-      swatch.addEventListener('click', () => {
-        document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-        swatch.classList.add('selected');
-        currentColor = swatch.getAttribute('data-color');
+        // Optimistic update
+        paintPixel(cellX, cellY, currentColor);
+        await sendPixel(cellX, cellY, currentColor);
       });
-    });
 
-    loadPixels();
-  </script>
-</body>
+      canvas.addEventListener("mousemove", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const canvasX = Math.floor((e.clientX - rect.left) * scaleX);
+        const canvasY = Math.floor((e.clientY - rect.top) * scaleY);
+
+        const cellX = Math.floor(canvasX / GRID_SIZE);
+        const cellY = Math.floor(canvasY / GRID_SIZE);
+
+        coordinatesEl.textContent = `Posición: ${cellX}, ${cellY}`;
+      });
+
+      canvas.addEventListener("mouseleave", () => {
+        coordinatesEl.textContent = "Posición: --, --";
+      });
+
+      document.querySelectorAll(".color-swatch").forEach((swatch) => {
+        swatch.addEventListener("click", () => {
+          document
+            .querySelectorAll(".color-swatch")
+            .forEach((s) => s.classList.remove("selected"));
+          swatch.classList.add("selected");
+          currentColor = swatch.getAttribute("data-color");
+          console.log("Color seleccionado:", currentColor);
+        });
+      });
+
+      // Inicializar
+      loadPixels();
+      connectWebSocket();
+    </script>
+  </body>
 </html>
